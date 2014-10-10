@@ -6,11 +6,11 @@ require 'bolt/version'
 Gem::Specification.new do |spec|
   spec.name          = "bolt"
   spec.version       = Bolt::VERSION
-  spec.authors       = ["Nikolaos Anastopoulos"]
-  spec.email         = ["ebababi@ebababi.net"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
-  spec.homepage      = ""
+  spec.authors       = ["GaggleAMP"]
+  spec.email         = ["info@gaggleamp.com"]
+  spec.summary       = %q{Enables the encryption of specific ActiveRecord attributes.}
+  spec.description   = %q{Enables the encryption of specific ActiveRecord attributes.}
+  spec.homepage      = "https://github.com/GaggleAMP/bolt"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
@@ -20,4 +20,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake"
+  spec.add_development_dependency "rspec", "~> 3.1"
+  spec.add_development_dependency "sqlite3"
+  spec.add_dependency "activerecord",  ">= 3.1", "< 4.2"
+  spec.add_dependency "activesupport", ">= 3.1", "< 4.2"
 end
