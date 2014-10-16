@@ -1,4 +1,4 @@
-Copyright (c) 2014 Nikolaos Anastopoulos
+Copyright (c) 2014 GaggleAMP, Inc
 
 MIT License
 
