@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-require 'bolt'
+require 'cryptonite'
 
 require 'active_record'
 
-describe Bolt do
+describe Cryptonite do
   before do
     ::ActiveRecord::Base.establish_connection(adapter: 'sqlite3',
                                               encoding: 'utf8',
@@ -28,7 +28,7 @@ describe Bolt do
 
   context "with public key only" do
     before do
-      stub_const('Bolt::PRIVATE_KEY', nil)
+      stub_const('Cryptonite::PRIVATE_KEY', nil)
     end
 
     it 'encrypts field in database' do
@@ -44,7 +44,7 @@ describe Bolt do
 
   context "with private key only" do
     before do
-      stub_const('Bolt::PUBLIC_KEY', nil)
+      stub_const('Cryptonite::PUBLIC_KEY', nil)
     end
 
     it 'decrypts field in database' do

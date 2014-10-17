@@ -1,16 +1,16 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'bolt/version'
+require 'cryptonite/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "bolt"
-  spec.version       = Bolt::VERSION
+  spec.name          = "cryptonite"
+  spec.version       = Cryptonite::VERSION
   spec.authors       = ["GaggleAMP"]
   spec.email         = ["info@gaggleamp.com"]
   spec.summary       = %q{Enables the encryption of specific ActiveRecord attributes.}
   spec.description   = %q{Enables the encryption of specific ActiveRecord attributes.}
-  spec.homepage      = "https://github.com/GaggleAMP/bolt"
+  spec.homepage      = "https://github.com/GaggleAMP/cryptonite"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")

@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in bolt.gemspec
+# Specify your gem's dependencies in cryptonite.gemspec
 gemspec

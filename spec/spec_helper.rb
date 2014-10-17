@@ -91,7 +91,7 @@ RSpec.configure do |config|
   ::PUBLIC_FIXTURE_KEY = OpenSSL::PKey::RSA.new(File.read(File.expand_path('../fixtures/keys/public.pem', __FILE__)))
   ::PRIVATE_FIXTURE_KEY = OpenSSL::PKey::RSA.new(File.read(File.expand_path('../fixtures/keys/private.pem', __FILE__)), 'test')
   config.before do
-    stub_const('Bolt::PUBLIC_KEY', PUBLIC_FIXTURE_KEY)
-    stub_const('Bolt::PRIVATE_KEY', PRIVATE_FIXTURE_KEY)
+    stub_const('Cryptonite::PUBLIC_KEY', PUBLIC_FIXTURE_KEY)
+    stub_const('Cryptonite::PRIVATE_KEY', PRIVATE_FIXTURE_KEY)
   end
 end

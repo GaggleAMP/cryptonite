@@ -1,4 +1,4 @@
-# Bolt
+# Cryptonite
 
 This gem enables the encryption of specific ActiveRecord attributes using
 public key encryption. The advantage is that write only operations do not
@@ -14,7 +14,7 @@ considered as cryptography software.
 
 Add this line to your application's Gemfile:
 
-    gem 'bolt'
+    gem 'cryptonite'
 
 And then execute:
 
@@ -22,7 +22,7 @@ And then execute:
 
 ## Usage
 
-Bolt adds to ActiveRecord the `attr_encrypted` method, which is used to declare
+Cryptonite adds to ActiveRecord the `attr_encrypted` method, which is used to declare
 the attributes that will be transparently encrypted, e.g.
 
     attr_encrypted :secret, :another_secret
@@ -47,7 +47,7 @@ encryption / decryption does not take place there. This is by design.
 
 ## Contributing
 
-1. Fork it ( https://github.com/GaggleAMP/bolt/fork )
+1. Fork it ( https://github.com/GaggleAMP/cryptonite/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)

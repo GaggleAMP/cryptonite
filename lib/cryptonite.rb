@@ -1,4 +1,4 @@
-require 'bolt/version'
+require 'cryptonite/version'
 
 require 'openssl'
 require 'base64'
@@ -6,10 +6,10 @@ require 'base64'
 require 'active_support/concern'
 require 'active_support/lazy_load_hooks'
 
-# Bolt
+# Cryptonite
 #
 # Enables the encryption of specific ActiveRecord attributes.
-module Bolt
+module Cryptonite
   extend ActiveSupport::Concern
 
   PUBLIC_KEY = OpenSSL::PKey::RSA.new(File.read(ENV['PUBLIC_KEY_FILE'])) rescue nil
@@ -75,5 +75,5 @@ module Bolt
 end
 
 ActiveSupport.on_load :active_record do
-  include Bolt
+  include Cryptonite
 end
