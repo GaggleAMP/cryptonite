@@ -12,8 +12,8 @@ require 'active_support/lazy_load_hooks'
 module Cryptonite
   extend ActiveSupport::Concern
 
-  PUBLIC_KEY = OpenSSL::PKey::RSA.new(File.read(ENV['PUBLIC_KEY_FILE'])) rescue nil
-  PRIVATE_KEY = OpenSSL::PKey::RSA.new(File.read(ENV['PRIVATE_KEY_FILE']), ENV['PRIVATE_KEY_PASSWORD']) rescue nil
+  PUBLIC_KEY = OpenSSL::PKey::RSA.new(ENV['PUBLIC_KEY'] || File.read(ENV['PUBLIC_KEY_FILE'])) rescue nil
+  PRIVATE_KEY = OpenSSL::PKey::RSA.new(ENV['PRIVATE_KEY'] || File.read(ENV['PRIVATE_KEY_FILE']), ENV['PRIVATE_KEY_PASSWORD']) rescue nil
 
   included do
     class_attribute :_attr_encrypted, instance_accessor: false
