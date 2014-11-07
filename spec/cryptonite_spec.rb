@@ -26,6 +26,20 @@ describe Cryptonite do
     end.tap { |obj| obj.attr_encrypted :secret }
   }
 
+  context "with both keys" do
+    it 'encrypts field in database' do
+      secret = SecureRandom.hex(16)
+
+      subject.create(secret: secret).reload.tap do |instance|
+        expect(
+          instance.instance_variable_get(:@attributes).send(:fetch, 'secret')
+        ).not_to eq(secret)
+
+        expect(instance.secret).to eq(secret)
+      end
+    end
+  end
+
   context "with public key only" do
     before do
       stub_const('Cryptonite::PRIVATE_KEY', nil)
