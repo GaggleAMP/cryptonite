@@ -45,6 +45,28 @@ Moreover, please note that ActiveRecord methods that operate massively on
 records do not use the `read_attribute` and `write_attribute` methods and so
 encryption / decryption does not take place there. This is by design.
 
+## Key Generation
+
+Generate a key pair:
+
+```shell
+openssl genrsa -des3 -out private.pem 2048
+Generating RSA private key, 2048 bit long modulus
+......+++
+.+++
+e is 65537 (0x10001)
+Enter pass phrase for private.pem:
+Verifying - Enter pass phrase for private.pem:
+```
+
+and extract the the public key:
+
+```shell
+openssl rsa -in private.pem -out public.pem -outform PEM -pubout
+Enter pass phrase for private.pem:
+writing RSA key
+```
+
 ## Contributing
 
 1. Fork it ( https://github.com/GaggleAMP/cryptonite/fork )
