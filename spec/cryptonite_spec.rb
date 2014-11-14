@@ -26,7 +26,7 @@ describe Cryptonite do
     end
   }
 
-  context "with both keys" do
+  context "with private key" do
     before do
       subject.tap { |obj| obj.attr_encrypted :secret, key_pair: PRIVATE_FIXTURE_KEY }
     end
@@ -48,6 +48,20 @@ describe Cryptonite do
         instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
 
         expect(instance.secret).to eq(secret)
+      end
+    end
+
+    it 'handles nil values' do
+      subject.new(secret: nil).tap do |instance|
+        expect(
+          instance.instance_variable_get(:@attributes).send(:fetch, 'secret').serialized_value
+        ).to be_nil
+      end
+
+      subject.new.tap do |instance|
+        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = nil
+
+        expect(instance.secret).to be_nil
       end
     end
 
@@ -86,6 +100,20 @@ describe Cryptonite do
         instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
 
         expect{ instance.secret }.to raise_error OpenSSL::PKey::RSAError
+      end
+    end
+
+    it 'handles nil values' do
+      subject.new(secret: nil).tap do |instance|
+        expect(
+          instance.instance_variable_get(:@attributes).send(:fetch, 'secret').serialized_value
+        ).to be_nil
+      end
+
+      subject.new.tap do |instance|
+        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = nil
+
+        expect(instance.secret).to be_nil
       end
     end
   end

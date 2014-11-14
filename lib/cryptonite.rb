@@ -76,14 +76,14 @@ module Cryptonite
     # Encrypts a value with public key encryption. Keys should be defined in
     # environment.
     def encrypt(value)
-      Base64.encode64(@key.public_encrypt(value))
+      Base64.encode64(@key.public_encrypt(value)) if value
     end
     alias :dump :encrypt
 
     # Decrypts a value with public key encryption. Keys should be defined in
     # environment.
     def decrypt(value)
-      @key.private_decrypt(Base64.decode64(value))
+      @key.private_decrypt(Base64.decode64(value)) if value
     end
     alias :load :decrypt
   end
