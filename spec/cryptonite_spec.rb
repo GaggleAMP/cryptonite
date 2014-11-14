@@ -23,16 +23,40 @@ describe Cryptonite do
       def self.table_name
         "sensitive_data"
       end    
-    end.tap { |obj| obj.attr_encrypted :secret }
+    end
   }
 
   context "with both keys" do
+    before do
+      subject.tap { |obj| obj.attr_encrypted :secret, key_pair: PRIVATE_FIXTURE_KEY }
+    end
+
     it 'encrypts field in database' do
+      secret = SecureRandom.hex(16)
+
+      subject.new(secret: secret).tap do |instance|
+        expect(
+          instance.instance_variable_get(:@attributes).send(:fetch, 'secret').serialized_value
+        ).not_to eq(secret)
+      end
+    end
+
+    it 'decrypts field in database' do
+      secret = SecureRandom.hex(16)
+
+      subject.new.tap do |instance|
+        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
+
+        expect(instance.secret).to eq(secret)
+      end
+    end
+
+    it 'encrypts and decrypts field in database' do
       secret = SecureRandom.hex(16)
 
       subject.create(secret: secret).reload.tap do |instance|
         expect(
-          instance.instance_variable_get(:@attributes).send(:fetch, 'secret')
+          instance.instance_variable_get(:@attributes).send(:fetch, 'secret').serialized_value
         ).not_to eq(secret)
 
         expect(instance.secret).to eq(secret)
@@ -42,7 +66,7 @@ describe Cryptonite do
 
   context "with public key only" do
     before do
-      stub_const('Cryptonite::PRIVATE_KEY', nil)
+      subject.tap { |obj| obj.attr_encrypted :secret, public_key: PUBLIC_FIXTURE_KEY }
     end
 
     it 'encrypts field in database' do
@@ -50,24 +74,18 @@ describe Cryptonite do
 
       subject.new(secret: secret).tap do |instance|
         expect(
-          instance.instance_variable_get(:@attributes).send(:fetch, 'secret')
+          instance.instance_variable_get(:@attributes).send(:fetch, 'secret').serialized_value
         ).not_to eq(secret)
       end
     end
-  end
 
-  context "with private key only" do
-    before do
-      stub_const('Cryptonite::PUBLIC_KEY', nil)
-    end
-
-    it 'decrypts field in database' do
+    it 'cannot decrypt field in database' do
       secret = SecureRandom.hex(16)
 
       subject.new.tap do |instance|
-        instance.instance_variable_get(:@attributes).send(:store, 'secret', Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret)))
+        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
 
-        expect(instance.secret).to eq(secret)
+        expect{ instance.secret }.to raise_error OpenSSL::PKey::RSAError
       end
     end
   end

@@ -12,9 +12,6 @@ require 'active_support/lazy_load_hooks'
 module Cryptonite
   extend ActiveSupport::Concern
 
-  PUBLIC_KEY = OpenSSL::PKey::RSA.new(ENV['PUBLIC_KEY'] || File.read(ENV['PUBLIC_KEY_FILE'])) rescue nil
-  PRIVATE_KEY = OpenSSL::PKey::RSA.new(ENV['PRIVATE_KEY'] || File.read(ENV['PRIVATE_KEY_FILE']), ENV['PRIVATE_KEY_PASSWORD']) rescue nil
-
   included do
     class_attribute :_attr_encrypted, instance_accessor: false
     self._attr_encrypted = []
@@ -24,6 +21,15 @@ module Cryptonite
     # Attributes listed as encrypted will be transparently encrypted and
     # decrypted in database operations.
     def attr_encrypted(*attributes)
+      options = attributes.extract_options!
+
+      @public_key = get_rsa_key(options[:public_key] || options[:key_pair] || ENV['PUBLIC_KEY'])
+      @private_key = get_rsa_key(options[:private_key] || options[:key_pair] || ENV['PRIVATE_KEY'], options[:private_key_password] || ENV['PRIVATE_KEY_PASSWORD'])
+
+      for attribute in attributes do
+        serialize attribute, Coder.new(@private_key || @public_key)
+      end
+
       self._attr_encrypted = Set.new(attributes.map { |a| a.to_s }) + (self._attr_encrypted || [])
     end
 
@@ -31,47 +37,56 @@ module Cryptonite
     def encrypted_attributes
       self._attr_encrypted
     end
-  end
 
-  # Wrap write_attribute to encrypt value.
-  def write_attribute(attr_name, value)
-    attr_name = attr_name.to_s
+  private
+    # Retrives an RSA key with multiple ways.
+    def get_rsa_key(key, password = nil)
+      return nil unless key
 
-    if self.class.encrypted_attributes.include?(attr_name)
-      value = encrypt(value)
-    end unless value.nil?
+      if key.is_a?(Proc)
+        key = key.call
+      end
 
-    super(attr_name, value)
-  end
+      if key.is_a?(Symbol)
+        key = @instance.send(key)
+      end
 
-  # Wrap read_attribute to encrypt value.
-  def read_attribute(attr_name)
-    attr_name = attr_name.to_s
+      return key if key.is_a?(::OpenSSL::PKey::RSA)
 
-    if self.class.encrypted_attributes.include?(attr_name)
-      value = super(attr_name)
-      decrypt(value) unless value.nil?
-    else
-      super(attr_name)
+      if key.respond_to?(:read)
+        key = key.read
+      elsif key !~ /^-+BEGIN .* KEY-+$/
+        key = File.read(key)
+      end
+
+      if password.nil?
+        ::OpenSSL::PKey::RSA.new(key)
+      else
+        ::OpenSSL::PKey::RSA.new(key, password.to_s)
+      end
     end
   end
 
-  private
+  class Coder # :nodoc:
+    def initialize(key)
+      raise ArgumentError unless key.is_a?(::OpenSSL::PKey::RSA)
+      @key = key
+    end
+
     # Encrypts a value with public key encryption. Keys should be defined in
     # environment.
     def encrypt(value)
-      raise ActiveRecord::ActiveRecordError.new("Undefined public key for encrypted attribute") if PUBLIC_KEY.nil?
-
-      Base64.encode64(PUBLIC_KEY.public_encrypt(value))
+      Base64.encode64(@key.public_encrypt(value))
     end
+    alias :dump :encrypt
 
     # Decrypts a value with public key encryption. Keys should be defined in
     # environment.
     def decrypt(value)
-      raise ActiveRecord::ActiveRecordError.new("Undefined private key for encrypted attribute") if PRIVATE_KEY.nil?
-
-      PRIVATE_KEY.private_decrypt(Base64.decode64(value))
+      @key.private_decrypt(Base64.decode64(value))
     end
+    alias :load :decrypt
+  end
 end
 
 ActiveSupport.on_load :active_record do

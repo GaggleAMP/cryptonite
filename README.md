@@ -27,23 +27,24 @@ the attributes that will be transparently encrypted, e.g.
 
     attr_encrypted :secret, :another_secret
 
-The library operates by overriding `read_attribute` and `write_attribute`
-methods, intercepting with the encryption / decryption of the attribute value.
+The library operates by serializing the fields with a custom encoder that will
+do encryption / decryption of the attribute value.
 
 In order to encrypt the data the library should be provided with the public key
 path, and respectively in order to decrypt them it requires the private key
-path along with its password. Currently, those settings are set only in the
-environment, using the variable names `PUBLIC_KEY_FILE`, `PRIVATE_KEY_FILE` and
-`PRIVATE_KEY_PASSWORD`.
+path along with its password. Those settings can be set either in the
+environment, using the variable names `PUBLIC_KEY`, `PRIVATE_KEY` and
+`PRIVATE_KEY_PASSWORD`, or be passed as options to the `attr_encrypted` method:
+
+    attr_encrypted :secret, public_key: File.read('public_key.pem')
+    attr_encrypted :another_secret, private_key: 'private_key.pem', private_key_password: 'test'
+    attr_encrypted :yet_another_secret, key_pair: :get_key_method
 
 If an application does not need to retrieve the encrypted information it is not
-required for the private key settings to be defined. However, please note that
-during development the `inspect` method does call the `read_attribute` method
-and hence it will fail if a private key is not provided.
-
-Moreover, please note that ActiveRecord methods that operate massively on
-records do not use the `read_attribute` and `write_attribute` methods and so
-encryption / decryption does not take place there. This is by design.
+required for the private key settings to be defined. Moreover, please note that
+ActiveRecord methods that operate massively on records do not use the
+serialization features and so encryption / decryption does not take place
+there. This is by design.
 
 ## Key Generation
 
