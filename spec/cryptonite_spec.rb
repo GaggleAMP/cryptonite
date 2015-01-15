@@ -12,21 +12,21 @@ describe Cryptonite do
                                               database: ':memory:')
 
     ::ActiveRecord::Schema.define do
-      create_table :sensitive_data, :force => true do |t|
+      create_table :sensitive_data, force: true do |t|
         t.column :secret, :text
       end
     end
   end
 
-  subject {
+  subject do
     Class.new(ActiveRecord::Base) do
       def self.table_name
-        "sensitive_data"
-      end    
+        'sensitive_data'
+      end
     end
-  }
+  end
 
-  context "with private key" do
+  context 'with private key' do
     before do
       subject.tap { |obj| obj.attr_encrypted :secret, key_pair: PRIVATE_FIXTURE_KEY }
     end
@@ -45,7 +45,8 @@ describe Cryptonite do
       secret = SecureRandom.hex(16)
 
       subject.new.tap do |instance|
-        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
+        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value =
+          Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
 
         expect(instance.secret).to eq(secret)
       end
@@ -78,7 +79,7 @@ describe Cryptonite do
     end
   end
 
-  context "with public key only" do
+  context 'with public key only' do
     before do
       subject.tap { |obj| obj.attr_encrypted :secret, public_key: PUBLIC_FIXTURE_KEY }
     end
@@ -97,9 +98,10 @@ describe Cryptonite do
       secret = SecureRandom.hex(16)
 
       subject.new.tap do |instance|
-        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value = Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
+        instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value =
+          Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
 
-        expect{ instance.secret }.to raise_error OpenSSL::PKey::RSAError
+        expect { instance.secret }.to raise_error OpenSSL::PKey::RSAError
       end
     end
 

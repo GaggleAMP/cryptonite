@@ -88,6 +88,8 @@ RSpec.configure do |config|
 =end
 
   # Configure public key encryption for the Cryptonite concern.
-  ::PUBLIC_FIXTURE_KEY = OpenSSL::PKey::RSA.new(File.read(File.expand_path('../fixtures/keys/public.pem', __FILE__)))
-  ::PRIVATE_FIXTURE_KEY = OpenSSL::PKey::RSA.new(File.read(File.expand_path('../fixtures/keys/private.pem', __FILE__)), 'test')
+  ::PUBLIC_FIXTURE_KEY =
+    OpenSSL::PKey::RSA.new(File.read(File.expand_path('../fixtures/keys/public.pem', __FILE__)))
+  ::PRIVATE_FIXTURE_KEY =
+    OpenSSL::PKey::RSA.new(File.read(File.expand_path('../fixtures/keys/private.pem', __FILE__)), 'test')
 end
