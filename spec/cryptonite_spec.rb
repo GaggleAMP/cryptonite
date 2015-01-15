@@ -46,7 +46,7 @@ describe Cryptonite do
 
       subject.new.tap do |instance|
         instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value =
-          Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
+          Cryptonite::TOKEN + Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
 
         expect(instance.secret).to eq(secret)
       end
@@ -99,7 +99,7 @@ describe Cryptonite do
 
       subject.new.tap do |instance|
         instance.instance_variable_get(:@attributes).send(:fetch, 'secret').value =
-          Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
+          Cryptonite::TOKEN + Base64.encode64(PUBLIC_FIXTURE_KEY.public_encrypt(secret))
 
         expect { instance.secret }.to raise_error OpenSSL::PKey::RSAError
       end
@@ -117,6 +117,40 @@ describe Cryptonite do
 
         expect(instance.secret).to be_nil
       end
+    end
+  end
+
+  context 'during upwards migration' do
+    before do
+      @secret = SecureRandom.hex(16)
+      subject.create(secret: @secret)
+
+      subject.tap { |obj| obj.attr_encrypted :secret, key_pair: PRIVATE_FIXTURE_KEY }
+    end
+
+    it 'encrypts field in database' do
+      expect(subject.last.instance_variable_get(:@attributes).send(:fetch, 'secret').value).to eq(@secret)
+
+      Cryptonite.encrypt_model_attributes(subject, :secret, key_pair: PRIVATE_FIXTURE_KEY)
+
+      expect(subject.last.instance_variable_get(:@attributes).send(:fetch, 'secret').unserialized_value).to eq(@secret)
+    end
+  end
+
+  context 'during downwards migration' do
+    before do
+      subject.tap { |obj| obj.attr_encrypted :secret, key_pair: PRIVATE_FIXTURE_KEY }
+
+      @secret = SecureRandom.hex(16)
+      subject.create(secret: @secret)
+    end
+
+    it 'decrypts field in database' do
+      expect(subject.last.instance_variable_get(:@attributes).send(:fetch, 'secret').unserialized_value).to eq(@secret)
+
+      Cryptonite.decrypt_model_attributes(subject, :secret, key_pair: PRIVATE_FIXTURE_KEY)
+
+      expect(subject.last.instance_variable_get(:@attributes).send(:fetch, 'secret').value).to eq(@secret)
     end
   end
 end

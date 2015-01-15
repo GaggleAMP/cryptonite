@@ -2,6 +2,7 @@ require 'cryptonite/version'
 
 require 'openssl'
 require 'base64'
+require 'zlib'
 
 require 'active_support/concern'
 require 'active_support/lazy_load_hooks'
@@ -11,6 +12,9 @@ require 'active_support/lazy_load_hooks'
 # Enables the encryption of specific ActiveRecord attributes.
 module Cryptonite
   extend ActiveSupport::Concern
+
+  TOKEN = 'PKI'
+  BASE64REGEX = %r{^#{TOKEN}([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$}
 
   included do
     class_attribute :_attr_encrypted, instance_accessor: false
@@ -100,16 +104,58 @@ module Cryptonite
     # Encrypts a value with public key encryption. Keys should be defined in
     # environment.
     def encrypt(value)
-      Base64.encode64(@key.public_encrypt(value)) if value
+      return unless value
+      fail ArgumentError, 'Value is already encrypted' if value.match(BASE64REGEX)
+      TOKEN + Base64.encode64(@key.public_encrypt(value))
     end
     alias_method :dump, :encrypt
 
     # Decrypts a value with public key encryption. Keys should be defined in
     # environment.
     def decrypt(value)
-      @key.private_decrypt(Base64.decode64(value)) if value
+      return unless value
+      fail ArgumentError, 'Value is not encrypted' unless value.match(BASE64REGEX)
+      @key.private_decrypt(Base64.decode64(value.gsub(/#{TOKEN}/, '')))
     end
     alias_method :load, :decrypt
+  end
+
+  module_function
+
+  # Encrypts attributes of a specific model. This method is indended for migration purposes. It takes the same arguments
+  # as the `attr_encrypted` class method.
+  def encrypt_model_attributes(model, *attributes)
+    fail ArgumentError, "ActiveRecord::Base expected, got #{model.inspect}" unless model <= ActiveRecord::Base
+
+    model.attr_encrypted(*attributes)
+    model.reset_column_information
+
+    model.find_each do |record|
+      model.encrypted_attributes.each do |attribute|
+        record.instance_variable_get(:@attributes).send(:fetch, attribute).serialize
+        record.send(:attribute_will_change!, attribute)
+      end
+
+      record.save
+    end
+  end
+
+  # Decrypts attributes of a specific model. This method is indended for migration purposes. It takes the same arguments
+  # as the `attr_encrypted` class method. It requires a private key to decrypt the data.
+  def decrypt_model_attributes(model, *attributes)
+    fail ArgumentError, "ActiveRecord::Base expected, got #{model.inspect}" unless model <= ActiveRecord::Base
+
+    model.attr_encrypted(*attributes)
+    model.reset_column_information
+
+    model.find_each do |record|
+      updated_columns =
+        model.encrypted_attributes.each_with_object({}) do |attribute, values|
+          values[attribute] = record.read_attribute(attribute)
+        end
+
+      record.update_columns(updated_columns)
+    end
   end
 end
 
