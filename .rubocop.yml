@@ -1,0 +1,63 @@
+AllCops:
+  RunRailsCops: true
+  Exclude:
+    # Rubocop's default
+    - 'vendor/**/*'
+    # To ensure smooth `rake rails:update`, we exclude some of the Rails' generated files
+    # please add new Rails' generated files to this list after running `rake rails:update` (if any)
+    # please add your exclude specific for this project after this section
+    - 'bin/**/*'
+    - 'config/boot.rb'
+    - 'config/application.rb'
+    - 'config/environment.rb'
+    - 'config/environments/development.rb'
+    - 'config/environments/production.rb'
+    - 'config/environments/test.rb'
+    - 'config/initializers/assets.rb'
+    - 'config/initializers/backtrace_silencers.rb'
+    - 'config/initializers/cookies_serializer.rb'
+    - 'config/initializers/filter_parameter_logging.rb'
+    - 'config/initializers/inflections.rb'
+    - 'config/initializers/mime_types.rb'
+    - 'config/initializers/session_store.rb'
+    - 'config/initializers/wrap_parameters.rb'
+    - 'db/schema.rb'
+    - 'script/**/*'
+    # Common generated files (projects independent)
+    - 'config/unicorn.rb'
+    - 'config/initializers/devise.rb'
+    # Add your exclude files specific to this project here
+    - 'config/initializers/maps.rb'
+
+Style/AlignParameters:
+  Enabled: true
+  EnforcedStyle: with_fixed_indentation
+
+Style/Documentation:
+  Enabled: false
+
+# If the project still supporting ruby 1.8, uncomment the following lines to force Rubocop
+# to use old hash_rockets syntax, if left commented, Rubocop will force the newer ruby19 syntax
+# Style/HashSyntax:
+#   EnforcedStyle: hash_rockets
+
+Style/SingleSpaceBeforeFirstArg:
+  Enabled: false
+
+##################### Metrics ##################################
+
+Metrics/LineLength:
+  Max: 120
+  AllowURI: true
+
+Metrics/MethodLength:
+  CountComments: false
+  Exclude:
+    - 'db/migrate/*'
+
+
+# Project specific settings
+
+Style/BlockComments:
+  Exclude:
+    - 'spec/spec_helper.rb'

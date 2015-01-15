@@ -23,22 +23,28 @@ module Cryptonite
     def attr_encrypted(*attributes)
       options = attributes.extract_options!
 
-      @public_key = get_rsa_key(options[:public_key] || options[:key_pair] || ENV['PUBLIC_KEY'])
-      @private_key = get_rsa_key(options[:private_key] || options[:key_pair] || ENV['PRIVATE_KEY'], options[:private_key_password] || ENV['PRIVATE_KEY_PASSWORD'])
+      @public_key = get_rsa_key(
+        options[:public_key] || options[:key_pair] || ENV['PUBLIC_KEY']
+      )
+      @private_key = get_rsa_key(
+        options[:private_key] || options[:key_pair] || ENV['PRIVATE_KEY'],
+        options[:private_key_password] || ENV['PRIVATE_KEY_PASSWORD']
+      )
 
-      for attribute in attributes do
+      attributes.each do |attribute|
         serialize attribute, Coder.new(@private_key || @public_key)
       end
 
-      self._attr_encrypted = Set.new(attributes.map { |a| a.to_s }) + (self._attr_encrypted || [])
+      self._attr_encrypted = Set.new(attributes.map(&:to_s)) + (_attr_encrypted || [])
     end
 
     # Returns an array of all the attributes that have been specified as encrypted.
     def encrypted_attributes
-      self._attr_encrypted
+      _attr_encrypted
     end
 
-  private
+    private
+
     # Retrives an RSA key with multiple ways.
     def get_rsa_key(key, password = nil)
       return nil unless key
@@ -69,7 +75,7 @@ module Cryptonite
 
   class Coder # :nodoc:
     def initialize(key)
-      raise ArgumentError unless key.is_a?(::OpenSSL::PKey::RSA)
+      fail ArgumentError unless key.is_a?(::OpenSSL::PKey::RSA)
       @key = key
     end
 
@@ -78,14 +84,14 @@ module Cryptonite
     def encrypt(value)
       Base64.encode64(@key.public_encrypt(value)) if value
     end
-    alias :dump :encrypt
+    alias_method :dump, :encrypt
 
     # Decrypts a value with public key encryption. Keys should be defined in
     # environment.
     def decrypt(value)
       @key.private_decrypt(Base64.decode64(value)) if value
     end
-    alias :load :decrypt
+    alias_method :load, :decrypt
   end
 end
 
