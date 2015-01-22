@@ -117,7 +117,7 @@ describe Cryptonite do
     end
 
     it 'encrypts field in database' do
-      expect { subject.last.read_attribute_before_type_cast 'secret' }.to raise_error(ArgumentError)
+      expect { subject.last.read_attribute_before_type_cast 'secret' }.to raise_error ArgumentError
 
       Cryptonite.encrypt_model_attributes(subject, :secret, public_key: PUBLIC_FIXTURE_KEY)
 
