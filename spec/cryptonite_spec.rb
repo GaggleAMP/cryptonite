@@ -27,6 +27,24 @@ describe Cryptonite do
     end
   end
 
+  context 'with multiple attributes' do
+    before do
+      subject.tap { |obj| obj.attr_encrypted :secret, :another_secret, key_pair: PRIVATE_FIXTURE_KEY }
+    end
+
+    it 'encrypts and decrypts fields in database' do
+      secret = SecureRandom.hex(16)
+      another_secret = SecureRandom.hex(16)
+
+      subject.create(secret: secret, another_secret: another_secret).reload.tap do |instance|
+        expect(instance.typecasted_attribute_value 'secret').not_to eq(secret)
+        expect(instance.typecasted_attribute_value 'another_secret').not_to eq(another_secret)
+        expect(instance.read_attribute_before_type_cast 'secret').to eq(secret)
+        expect(instance.read_attribute_before_type_cast 'another_secret').to eq(another_secret)
+      end
+    end
+  end
+
   context 'with private key' do
     before do
       subject.tap { |obj| obj.attr_encrypted :secret, key_pair: PRIVATE_FIXTURE_KEY }
@@ -70,6 +88,26 @@ describe Cryptonite do
         expect(instance.read_attribute_before_type_cast 'secret').to eq(secret)
       end
     end
+
+    context 'with persisted record' do
+      before do
+        @secret = SecureRandom.hex(16)
+      end
+
+      let(:record) do
+        subject.create(secret: @secret)
+      end
+
+      it 'updates encrypted field in database' do
+        secret = SecureRandom.hex(16)
+
+        expect(record.read_attribute_before_type_cast 'secret').to eq(@secret)
+
+        record.update(secret: secret)
+
+        expect(record.read_attribute_before_type_cast 'secret').to eq(secret)
+      end
+    end
   end
 
   context 'with public key only' do
@@ -104,6 +142,26 @@ describe Cryptonite do
         instance.raw_write_attribute('secret', nil)
 
         expect(instance.read_attribute_before_type_cast 'secret').to be_nil
+      end
+    end
+
+    context 'with persisted record' do
+      before do
+        @secret = SecureRandom.hex(16)
+      end
+
+      let(:record) do
+        subject.create(secret: @secret)
+      end
+
+      it 'updates encrypted field in database' do
+        secret = SecureRandom.hex(16)
+
+        expect { record.read_attribute_before_type_cast 'secret' }.to raise_error OpenSSL::PKey::RSAError
+
+        record.update(secret: secret)
+
+        expect(record.read_attribute_before_type_cast 'secret').to eq(secret)
       end
     end
   end

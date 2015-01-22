@@ -3,6 +3,8 @@ require 'cryptonite/version'
 require 'cryptonite/coder'
 require 'cryptonite/key_extractor'
 
+require 'openssl'
+
 require 'active_support/concern'
 require 'active_support/lazy_load_hooks'
 
@@ -45,6 +47,35 @@ module Cryptonite
       attributes.each do |attribute|
         serialize attribute, Coder.new(key)
       end
+    end
+
+    # Override to handle ActiveModel::Dirty <tt>*_changed?</tt>.
+    def attribute_changed?(attr, options = {}) #:nodoc:
+      super
+    rescue ::OpenSSL::PKey::RSAError
+      fail ArgumentError, 'Private key needed' if options.key?(:to)
+      raise
+    end
+
+    # Override to handle ActiveModel::Dirty <tt>*_was</tt>.
+    def attribute_was(attr) # :nodoc:
+      super
+    rescue ::OpenSSL::PKey::RSAError
+      attribute_changed?(attr) ? changed_attributes[attr] : read_attribute_before_type_cast(attr)
+    end
+
+    # Override to handle ActiveModel::Dirty <tt>*_change</tt>.
+    def attribute_change(attr)
+      super
+    rescue ::OpenSSL::PKey::RSAError
+      [changed_attributes[attr], read_attribute_before_type_cast(attr)] if attribute_changed?(attr)
+    end
+
+    # Override to handle ActiveModel::Dirty <tt>*_will_change!</tt>.
+    def attribute_will_change!(attr)
+      super
+    rescue ::OpenSSL::PKey::RSAError
+      changed_attributes[attr] = read_attribute_before_type_cast(attr)
     end
   end
 
