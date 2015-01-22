@@ -1,7 +1,7 @@
 require 'cryptonite/version'
 
-require 'openssl'
-require 'base64'
+require 'cryptonite/coder'
+require 'cryptonite/key_extractor'
 
 require 'active_support/concern'
 require 'active_support/lazy_load_hooks'
@@ -18,6 +18,8 @@ module Cryptonite
   end
 
   module ClassMethods
+    include Cryptonite::KeyExtractor
+
     # Attributes listed as encrypted will be transparently encrypted and
     # decrypted in database operations.
     def attr_encrypted(*attributes)
@@ -44,73 +46,49 @@ module Cryptonite
         serialize attribute, Coder.new(key)
       end
     end
+  end
 
-    # Extracts public key from options or the environment.
-    def extract_public_key(options)
-      extract_key(options[:public_key] || options[:key_pair] || ENV['PUBLIC_KEY'])
-    end
+  module_function
 
-    # Extracts private key from options or the environment.
-    def extract_private_key(options)
-      extract_key(
-        options[:private_key] || options[:key_pair] || ENV['PRIVATE_KEY'],
-        options[:private_key_password] || ENV['PRIVATE_KEY_PASSWORD']
-      )
-    end
+  # Encrypts attributes of a specific model. This method is indended for migration purposes. It takes the same arguments
+  # as the `attr_encrypted` class method.
+  def encrypt_model_attributes(model, *attributes) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+    fail ArgumentError, "ActiveRecord::Base expected, got #{model.inspect}" unless model <= ActiveRecord::Base
 
-    # Retrives an RSA key with multiple ways.
-    def extract_key(key, password = nil)
-      return nil unless key
+    options = attributes.extract_options!
+    encrypted_attributes = attributes.map(&:to_s) & model.column_names
+    coder = Coder.new extract_public_key(options)
 
-      case key
-      when Proc then extract_key_from_proc(key, password)
-      when Symbol then extract_key_from_method(key, password)
-      when ::OpenSSL::PKey::RSA then key
-      else
-        key = retrieve_key_string_from_stream(key)
-        return ::OpenSSL::PKey::RSA.new(key) if password.nil?
-        ::OpenSSL::PKey::RSA.new(key, password.to_s)
-      end
-    end
+    model.find_each do |record|
+      updated_columns =
+        encrypted_attributes.each_with_object({}) do |attribute, values|
+          values[attribute] = coder.encrypt(record.typecasted_attribute_value attribute)
+        end
 
-    # Retrives an RSA key with a `proc` block.
-    def extract_key_from_proc(proc, password = nil)
-      extract_key(proc.call, password)
-    end
-
-    # Retrives an RSA key with a method symbol.
-    def extract_key_from_method(method, password = nil)
-      extract_key(@instance.send(method), password)
-    end
-
-    # Retrives a key string from a stream.
-    def retrieve_key_string_from_stream(stream)
-      return stream.read if stream.respond_to?(:read)
-      return File.read(stream) if stream.to_s !~ /^-+BEGIN .* KEY-+$/
-      stream
+      record.update_columns(updated_columns)
     end
   end
 
-  class Coder # :nodoc:
-    def initialize(key)
-      fail ArgumentError unless key.is_a?(::OpenSSL::PKey::RSA)
-      @key = key
-    end
+  # Decrypts attributes of a specific model. This method is indended for migration purposes. It takes the same arguments
+  # as the `attr_encrypted` class method. It requires a private key to decrypt the data.
+  def decrypt_model_attributes(model, *attributes) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+    fail ArgumentError, "ActiveRecord::Base expected, got #{model.inspect}" unless model <= ActiveRecord::Base
 
-    # Encrypts a value with public key encryption. Keys should be defined in
-    # environment.
-    def encrypt(value)
-      Base64.encode64(@key.public_encrypt(value)) if value
-    end
-    alias_method :dump, :encrypt
+    options = attributes.extract_options!
+    encrypted_attributes = attributes.map(&:to_s) & model.column_names
+    coder = Coder.new extract_private_key(options)
 
-    # Decrypts a value with public key encryption. Keys should be defined in
-    # environment.
-    def decrypt(value)
-      @key.private_decrypt(Base64.decode64(value)) if value
+    model.find_each do |record|
+      updated_columns =
+        encrypted_attributes.each_with_object({}) do |attribute, values|
+          values[attribute] = coder.decrypt(record.read_attribute_before_type_cast attribute)
+        end
+
+      record.update_columns(updated_columns)
     end
-    alias_method :load, :decrypt
   end
+
+  extend KeyExtractor
 end
 
 ActiveSupport.on_load :active_record do

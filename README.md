@@ -46,6 +46,35 @@ ActiveRecord methods that operate massively on records do not use the
 serialization features and so encryption / decryption does not take place
 there. This is by design.
 
+*Note: Currently the independency on private key is not fully implemented.*
+
+### Migration Helpers
+
+In order to facilitate migration two module methods have been implemented that
+operate independently from the ActiveRecord models. In a migration file the
+`Cryptonite.encrypt_model_attributes` may be used to facilitate upwards
+migration and `Cryptonite.decrypt_model_attributes` for downwards migration.
+The parameters is the ActiveRecord model class and the exact same parameters as
+the `attr_encrypted` method, e.g.
+
+    class ChangeSecretInUsers < ActiveRecord::Migration
+      def up
+        change_column :users, :secret, :text, limit: 4096
+    
+        say_with_time "encrypt_user_secrets" do
+          Cryptonite.encrypt_model_attributes(User, :secret, keypair: 'private_key.pem', private_key_password: 'test')
+        end
+      end
+    
+      def down
+        say_with_time "decrypt_user_secrets" do
+          Cryptonite.decrypt_model_attributes(User, :secret, keypair: 'private_key.pem', private_key_password: 'test')
+        end
+    
+        change_column :users, :secret, :string
+      end
+    end
+
 ## Key Generation
 
 Generate a key pair:
